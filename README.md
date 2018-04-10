@@ -7,9 +7,7 @@ Two-sided Bitcoin Classification project:
 <<<<<<< HEAD
 * Latent Space Models and Stochastic Block Models on Bitcoin Blockchain network data.
 
-Test
-
-Test
-=======
-* Latent Space Models and Stochastic Block Models on Bitcoin Blockchain network data.
->>>>>>> acc806cb2999e558dfa904aa970990a7221acfac
+## Contributors
+* Martin Johnsen ([mar10nJohns1](https://github.com/mar10nJohns1))
+* Andreas Jensen ([MotzWanted](https://github.com/MotzWanted))
+* Oliver Brandt ([brandtoliver](https://github.com/brandtoliver))
