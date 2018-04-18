@@ -19,6 +19,10 @@ from tensorflow.contrib.distributions import Distribution
 
 plt.style.use('ggplot')
 
+
+""" Notes til data: ikke standardiseret, hvilket skal huskes før det giver mening
+"""
+
 """
 Notes til Bernouli: logits: An N-D `Tensor` representing the log-odds of a `1` event. Each
  |          entry in the `Tensor` parametrizes an independent Bernoulli distribution
@@ -68,16 +72,18 @@ from mus through pi, but with a bias to mus[1] because this one hold the largest
 """
 
 
-#Reading subset:
-currDir = os.getcwd()                                                   #Defining the current directory
-fileSep = os.sep                                                        #Defining filesep
-file_path = os.path.join (currDir + fileSep + "Data" + fileSep)         #Defining the folder where the files are located:
+#Defining the current directory
+currDir = os.getcwd()
+#Defining filesep
+fileSep = os.sep
+#Defining the folder where the files are located:
+file_path = os.path.join (currDir + fileSep + "Documents" + fileSep + "blockchain_new_2013" + fileSep)        #Defining the folder where the files are located:
 
-sub= os.path.join(file_path, 'subset_version1.csv')                     #Path to subset
-subset= pd.read_csv(sub, sep=",", header=0)                             #Reading subset
+sub= os.path.join(file_path, 'user_rec.csv')                     #Path to subset
+subset= pd.read_csv(sub, sep=",")                             #Reading subset
 x_train=subset.values                                                   #Redefine x_train
-x_train= x_train[:,:13]
-x_train= x_train[4500:5000,]
+#x_train= x_train[:,:13]
+x_train= x_train[4000:5000,]
 
 
 N = len(x_train)  # number of data points                               #Setting parameters - N is defined from the number of rows
@@ -87,7 +93,7 @@ ed.set_seed(42)
 
 
 
-
+""" PRIORS """
 
 #Model:
 pi = Dirichlet(tf.ones(K))                                              #Defining prior
@@ -98,12 +104,12 @@ x = ParamMixture(pi, {'loc': mu, 'scale_diag': tf.sqrt(sigmasq)},       #Given a
                  sample_shape=N)
 z = x.cat                                                               #z is now defined as the component prescribed to the observed variable x.
 
-
+""" PRIORS """
 
 
 #Inference:                                                             #a conclusion reached on the basis of evidence and reasoning
-T = 5000                                                                #number of MCMC samples
-qpi = Empirical(                                                        #Emperical is just a sample of a set, which is good enough representation of the whole set.
+T = 10000                                                                #number of MCMC samples
+qpi = Empirical(                                                        #Emperical is just a sample of a set, which is good enough representation of the whole set.   
     tf.get_variable(                                                    #Gets an existing variable with these parameters or create a new one.
     "qpi/params", [T, K],                                               #Setting shape to be Number of MCMC samples times number of components
     initializer=tf.constant_initializer(1.0 / K)))                      #Initializer that generates tensors with constant values
@@ -182,7 +188,7 @@ clusters = tf.argmax(log_liks, 1).eval()
 
 #Plot the clusters:
 plt.scatter(x_train[:, 5], x_train[:, 6], c=clusters, cmap=cm.bwr)
-plt.axis([-5, 100, -5, 100])
+plt.axis([-5, 65, -5, 45])
 plt.title("Predicted cluster assignments")
 plt.show()
 
