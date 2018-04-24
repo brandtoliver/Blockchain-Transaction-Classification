@@ -141,10 +141,18 @@ normalized_user_rec=(user_rec.mean())/user_rec.std()
 corr_ur = user_rec.corr()
 
 #Drop all total" features
-user_rec1 = user_rec.drop('tot_value_in',1)
-user_rec1 = user_rec1.drop('tot_value_out',1)
-user_rec1 = user_rec1.drop('tot_in_degree',1)
-user_rec1 = user_rec1.drop('tot_out_degree',1)
+user_rec = user_rec.drop('tot_value_in',1)
+user_rec = user_rec.drop('tot_value_out',1)
+user_rec = user_rec.drop('tot_in_degree',1)
+user_rec = user_rec.drop('tot_out_degree',1)
+
+for cols in user_rec.columns.tolist()[1:]:
+    user_rec = user_rec.ix[user_rec[cols] > 0]
+    
+user_rec_tx = user_rec.nlargest(10000,'nr_transactions')
+
+user_rec_tx.to_csv("test_user_rec.csv")
+
 user_rec1 = user_rec1.drop('userID',1)
 
 normalized_user_rec=(user_rec1.mean())/user_rec1.std()
@@ -172,3 +180,82 @@ corr_df = df.corr()
 corr_df.to_csv("corr_matrix1.csv")
 
 scatter_matrix(normalized_user_rec,figsize=(16,12),alpha=0.3)
+
+"""                      SUBSAMPLING                      """
+user_rec = os.path.join(file_path, 'user_rec.csv')
+user_rec = pd.read_csv(user_rec, sep=",")
+#Remove users with negative values
+for cols in user_rec.columns.tolist()[1:]:
+    user_rec = user_rec.ix[user_rec[cols] > 0]
+    
+#Filter the 10.000 users with most transactions (user_record_dataset)
+user_rec_tx = user_rec.nlargest(10000,'nr_transactions')
+
+user_rec_tx.to_csv('test_user_rec',index=None)
+
+#Filter the 10.000 users with most transactions (network_dataset)
+#First I join our 10.000 users to the edge file, to see who are linking with too
+txedge=os.path.join(file_path, 'txedge.csv')
+txedge = pd.read_csv(txedge, sep="\t", header=None)
+txedge.columns=['tx_id', 'addrID_send', 'addrID_recv','unixtime']
+
+contraction = os.path.join(file_path, 'contraction.csv')
+contraction = pd.read_csv(contraction, sep="\t", header=None)
+contraction.columns=['addrID','userID']
+
+test_user_rec = os.path.join(file_path, 'test_user_rec.csv')
+test_user_rec = pd.read_csv(test_user_rec, sep=",")
+
+#Join number of transactions from test_user_rec to contraction and drop NaN values
+contraction = contraction.join(test_user_rec.set_index('userID')['nr_transactions'],on='userID')
+
+where_NaN = isnan(contraction)
+contraction[where_NaN ] = -1
+
+for cols in contraction.columns.tolist()[1:]:
+    contraction = contraction.ix[contraction[cols] > 0]
+
+#Join number of transactions to userID
+network = txedge.join(contraction.set_index('addrID')['userID'],on='addrID_send')
+network.columns=['tx_id', 'addrID_send', 'addrID_recv','unixtime','userID_send']
+network = network.join(contraction.set_index('addrID')['userID'],on='addrID_recv')
+network.columns=['tx_id', 'addrID_send', 'addrID_recv','unixtime','userID_send','userID_recv']
+network = network.drop('addrID_send',1)
+network = network.drop('addrID_recv',1)
+
+where_NaN = isnan(network)
+network[where_NaN ] = -1
+
+for cols in network.columns.tolist()[1:]:
+    network = network.ix[network[cols] > 0]
+    
+network.to_csv('network_subsample.csv',index=None)
+    
+""" TEST FOR AT SE ANTALLET AF USERID """
+network2=(network.groupby('userID_send')
+    .agg({'unixtime':['max']})
+    .reset_index()
+    .rename(columns={'addrID':'value'}))
+network2.columns=['userID','max_txid']
+
+network3=(network.groupby('userID_recv')
+    .agg({'unixtime':['max']})
+    .reset_index()
+    .rename(columns={'addrID':'value'}))
+network3.columns=['userID','max_txid']
+#########################################
+
+#Re-filter userID by user_send as index (Should be 9885 different userID)
+test_user_rec = os.path.join(file_path, 'test_user_rec.csv')
+test_user_rec = pd.read_csv(test_user_rec, sep=",")
+
+test_user_rec=test_user_rec.drop('nr_transactions',1)
+test_user_rec = test_user_rec.join(network1.set_index('userID_send')['nr_transactions'],on='userID')
+
+where_NaN = isnan(test_user_rec)
+test_user_rec[where_NaN ] = -1
+
+for cols in test_user_rec.columns.tolist()[1:]:
+    test_user_rec = test_user_rec.ix[test_user_rec[cols] > 0]
+
+network1.to_csv('network_subsample',index=None)
