@@ -30,26 +30,31 @@ Notes til Bernouli: logits: An N-D `Tensor` representing the log-odds of a `1` e
 
 """
 
-#Reading subset:
-currDir = os.getcwd()                                                   #Defining the current directory
-fileSep = os.sep                                                        #Defining filesep
-file_path = os.path.join (currDir + fileSep + "Data" + fileSep)         #Defining the folder where the files are located:
-
-sub= os.path.join(file_path, 'user_rec.csv')                            #Path to subset
-subset= pd.read_csv(sub, sep=",", header=0)                             #Reading subset
+#Reading data:
+subset= pd.read_csv('/Users/MartinJohnsen/Documents/Martin Johnsen/SAS/6. Semester/Bachelorprojekt/PyCharm/Data/user_rec.csv', sep=",", header=0)
 x_trainn=subset.values                                                  #Redefine x_train into an array instead of dataframe
 
 #Standardizing:
 from sklearn import preprocessing
 X= preprocessing.scale(x_trainn)
 
-#x_train= x_train[:,:13]
+#"""
+#Subset:
+x_train= X[0:50,]                                                  #Defining training data
+x_test= X[50:100,]                                                   #Defining test data
+N_testt= len(x_test)                                                    #Defining the length of the test-set
+#"""
+
+"""
+Full dataset:
 x_train= X[0:5000,]                                                  #Defining training data
 x_test= X[5000:10000,]                                                   #Defining test data
 N_testt= len(x_test)                                                    #Defining the length of the test-set
+"""
+#tf.reset_default_graph()                                                #Necessary for loop
 
 N = len(x_train)  # number of data points                               #Setting parameters - N is defined from the number of rows
-K = 10  # number of components                                           #Setting parameters - number of clusters
+K = 15  # number of components                                           #Setting parameters - number of clusters
 D = x_train.shape[1]  # dimensionality of data                           #Setting parameters - dimension of data
 ed.set_seed(42)
 
@@ -72,7 +77,7 @@ z = x.cat                                                               #z is no
 
 
 #Inference:                                                             #a conclusion reached on the basis of evidence and reasoning
-T = 1000                                                                #number of MCMC samples
+T = 100                                                                #number of MCMC samples
 qpi = Empirical(                                                        #Emperical is just a sample of a set, which is good enough representation of the whole set.
     tf.get_variable(                                                    #Gets an existing variable with these parameters or create a new one.
     "qpi/params", [T, K],                                               #Setting shape to be Number of MCMC samples times number of components
@@ -96,7 +101,7 @@ pi is the Dirichlet distribution.
 #Running Gibbs Sampling:
 inference = ed.Gibbs({pi: qpi, mu: qmu, sigmasq: qsigmasq, z: qz},      #Starter Gibbs sampling proceduren, hvor vi har posterior-fordelingen, samt vores emperiske
                      data={x: x_train})                                 # distributions-funktion hvor den bruger x_train som værende vores data.
-inference.initialize()                                                  #Initialiserer
+inference.initialize()                                                   #Initialiserer
 
 sess = ed.get_session()
 tf.global_variables_initializer().run()
@@ -111,9 +116,6 @@ for _ in range(inference.n_iter):
   if t % inference.n_print == 0:
     print("\nInferred cluster means:")
     print(sess.run(running_cluster_means, {t_ph: t - 1}))               #Her printes den opdaterede cluster mean for hver gang der printes.
-
-
-
 
 #Criticism:
 # Calculate likelihood for each data point and cluster assignment,
@@ -134,20 +136,21 @@ log_liks = x_post.log_prob(x_broadcasted)                                   #log
 log_liks = tf.reduce_sum(log_liks, 3)                                       #Optimization step for sum
 log_liks = tf.reduce_mean(log_liks, 1)
 
+# Choose the cluster with the highest likelihood for each data point.
+clusters = tf.argmax(log_liks, 1).eval()
 
-#1
+#Training log likelihood:
 x_neg_log_prob = (-tf.reduce_sum(x_post.log_prob(x_broadcasted)) /
                     tf.cast(tf.shape(x_broadcasted)[0], tf.float32))
 x_neg_log_prob.eval()
-
-#2
+"""
+#2 way to find log_liks
 a=tf.reduce_sum(log_liks)
 a.eval()
-
-
-highestClusters = tf.argmax(log_liks, 1).eval()
+"""
 
 """
+Training results:
 K=2:
 5550.2197
 
@@ -159,43 +162,32 @@ k=50:
 
 """
 
-
-# Choose the cluster with the highest likelihood for each data point.
-clusters = tf.argmax(log_liks, 1).eval()
-
-
-
-#Criticism
-#inference = ed.Gibbs({pi: qpi, mu: qmu, sigmasq: qsigmasq, z: qz},
-#                     data={x: x_train})
-
-
+#Posterior predictive distribution:
 x_post = ed.copy(x, {pi: qpi, mu: qmu, sigmasq: qsigmasq, z: qz})
 
+#Evaluate the posterior predictive (test-data prediction from model):
 x_test = tf.cast(x_test, tf.float32)
 ed.evaluate('log_likelihood', data={x_post: x_test})
+
+#End session from for-loop
+#ed.get_session().close()                                                   #Necessary for loop
+
 """
+Test-results:
 K=2:
 -9569.371
 hele datasættet:
 -42279.67
-
-
 
 K=10:
 -1923.0844
 hele datasættet:
 -8502.981
 
-
-
 k=50:
 -381.51727
 hele datasættet:
 -1692.1082
-
-
-
 """
 
 #Plot the clusters:
@@ -203,34 +195,3 @@ hele datasættet:
 #plt.axis([-5, 100, -5, 100])
 #plt.title("Predicted cluster assignments")
 #plt.show()
-
-
-#Next: Find ud af hvorfor når du plotter andre variable end x_train[:,0] og x_train[:,1] så kommer der ikke farver på plottet
-#Måske det bare er fordi du ikke zoomer nok ud?
-
-"""
-Finde ud af hvordan vi finder det optimale antal clustre
-
-
-"""
-
-
-###Model predictions:
-
-# create local posterior factors for test data, assuming test data
-# has N_test many data points
-qz_test = Categorical(logits=tf.Variable(tf.zeros([N_testt, K])))
-
-# run local inference conditional on global factors
-inference_test = ed.Inference({z: qz_test}, data={x: x_test, pi: qpi, mu: qmu, sigmasq: qsigmasq})
-inference_test.run()
-
-# build posterior predictive on test data
-x_post = ed.copy(x, {z: qz_test, beta: qbeta}})
-ed.evaluate('log_likelihood', data={x_post: x_test})
-
-
-
-{pi: qpi, mu: qmu, sigmasq: qsigmasq, z: qz}
-
-x_post = ed.copy(x, {pi: qpi, mu: qmu, sigmasq: qsigmasq, z: qz})
