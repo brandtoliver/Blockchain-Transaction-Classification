@@ -38,27 +38,31 @@ x_trainn=subset.values                                                  #Redefin
 from sklearn import preprocessing
 X= preprocessing.scale(x_trainn)
 
-#"""
-#Subset:
-x_train= X[0:50,]                                                  #Defining training data
-x_test= X[50:100,]                                                   #Defining test data
-N_testt= len(x_test)                                                    #Defining the length of the test-set
-#"""
-
 """
-Full dataset:
+#Subset:
+x_train= X[0:50,]                                                       #Defining training data
+x_test= X[50:100,]                                                      #Defining test data
+N_testt= len(x_test)                                                    #Defining the length of the test-set
+"""
+
+#"""
+#Full dataset:
 x_train= X[0:5000,]                                                  #Defining training data
 x_test= X[5000:10000,]                                                   #Defining test data
 N_testt= len(x_test)                                                    #Defining the length of the test-set
-"""
+#"""
 #tf.reset_default_graph()                                                #Necessary for loop
 
+
+#Next:
+#Kør clusters 10,50,250,500,1000,2000,5000
+#Noter alle test-likelihoods, og sammenlign.
+#Derefter indsnævres intervallet.
+
 N = len(x_train)  # number of data points                               #Setting parameters - N is defined from the number of rows
-K = 15  # number of components                                           #Setting parameters - number of clusters
+K = 1000  # number of components                                           #Setting parameters - number of clusters
 D = x_train.shape[1]  # dimensionality of data                           #Setting parameters - dimension of data
 ed.set_seed(42)
-
-
 
 
 
@@ -77,7 +81,7 @@ z = x.cat                                                               #z is no
 
 
 #Inference:                                                             #a conclusion reached on the basis of evidence and reasoning
-T = 100                                                                #number of MCMC samples
+T = 1000                                                                #number of MCMC samples
 qpi = Empirical(                                                        #Emperical is just a sample of a set, which is good enough representation of the whole set.
     tf.get_variable(                                                    #Gets an existing variable with these parameters or create a new one.
     "qpi/params", [T, K],                                               #Setting shape to be Number of MCMC samples times number of components
@@ -143,23 +147,23 @@ clusters = tf.argmax(log_liks, 1).eval()
 x_neg_log_prob = (-tf.reduce_sum(x_post.log_prob(x_broadcasted)) /
                     tf.cast(tf.shape(x_broadcasted)[0], tf.float32))
 x_neg_log_prob.eval()
-"""
-#2 way to find log_liks
-a=tf.reduce_sum(log_liks)
-a.eval()
-"""
 
 """
-Training results:
-K=2:
-5550.2197
-
 K=10:
-18139.309
+liks: 500406.7
+time: 246s
 
-k=50:
-77566.53
+K=50:
+liks: 577860.44
+time: 1866s
 
+K=250:
+liks: 760915.6
+time: 6809s
+
+K=1000:
+liks: 
+time: 100427s 
 """
 
 #Posterior predictive distribution:
@@ -169,26 +173,26 @@ x_post = ed.copy(x, {pi: qpi, mu: qmu, sigmasq: qsigmasq, z: qz})
 x_test = tf.cast(x_test, tf.float32)
 ed.evaluate('log_likelihood', data={x_post: x_test})
 
+"""
+K=10:
+-8517.825
+
+K=50:
+-1712.7479
+
+K=250:
+-337.85638
+
+
+"""
+
+
+
+
 #End session from for-loop
 #ed.get_session().close()                                                   #Necessary for loop
+#tf.Session.reset()
 
-"""
-Test-results:
-K=2:
--9569.371
-hele datasættet:
--42279.67
-
-K=10:
--1923.0844
-hele datasættet:
--8502.981
-
-k=50:
--381.51727
-hele datasættet:
--1692.1082
-"""
 
 #Plot the clusters:
 #plt.scatter(x_train[:, 5], x_train[:, 6], c=clusters, cmap=cm.bwr)
