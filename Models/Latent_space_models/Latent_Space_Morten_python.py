@@ -16,8 +16,10 @@ import collections
 #Reading data into adjecency and 0'ing last 1% links:
 from Feature_extraction.Edgelist import M_onesRemoved, M_fullData, M_zeroing
 
-x_train= M_zeroing[:500,:500]
+x_train= M_zeroing
 
+M_fullDataA= M_fullData
+M_onesRemovedA=M_onesRemoved
 """
 ###################
 ###################
@@ -53,7 +55,7 @@ plt.show()
 
 
 N = x_train.shape[0]  # number of data points
-K = 5  # latent dimensionality
+K = 200  # latent dimensionality
 
 #scale_z = InverseGamma(tf.ones([1,K])*1e-3, tf.ones([1,K])*1e-3)
 
@@ -97,7 +99,7 @@ plt.show()
 #Kør enten denne eller [51]:
 inference = ed.MAP([z1,z2,b], data={x: x_train})
 
-
+"""
 # In[51]:
 #Modellen  med KL-divergens:
 #tf.reset_default_graph()
@@ -108,12 +110,115 @@ qz2 = Normal(loc=tf.get_variable("qz2/loc", [N, K]),
 qb = Normal(loc=tf.get_variable("qb/loc", 1),
              scale=tf.nn.softplus(tf.get_variable("qb/scale", 1)))
 inference = ed.KLqp({z1: qz1, z2: qz2, b: qb}, data={x: x_train})
-
+"""
 
 # In[27]:
 #Kør denne inferens efter en af de to modeller:
 inference.run(n_iter=500)
 
+
+#Getting pi for M_onesRemoved:
+#type(M_onesRemovedA)
+M_onesRemovedtf= tf.convert_to_tensor(M_onesRemovedA, np.float32)
+pi_onesRemoved= tf.multiply(M_onesRemovedtf,pi)
+pi_onesRemoved_matrix= pi_onesRemoved.eval()
+pi_onesRemoved_array=np.asarray(pi_onesRemoved_matrix).reshape(-1)
+pi_onesRemoved_array=pi_onesRemoved_array[pi_onesRemoved_array!=0]          #All probabilities for ones_removed
+nrOfZeros=len(pi_onesRemoved_array)
+
+#Getting pi for M_fulldata
+#type(M_fullDataA)
+M_fullDataA= np.asarray(pi_onesRemoved_matrix).reshape(-1)
+where_zero=np.where(M_fullDataA==0)[0]
+where_zero_index=np.random.choice(where_zero,nrOfZeros)
+pi_zeros= pi.eval()
+pi_array= np.asarray(pi_zeros).reshape(-1)
+pi_originalZeros=pi_array[where_zero_index]                                 #All probabilities for correct zeros
+
+#Creating arrays with zeros and ones:
+zeros=np.zeros(nrOfZeros)
+ones=np.ones(nrOfZeros)
+#Setting together:
+y_test= np.concatenate((zeros, ones), axis=0)
+p= np.concatenate((pi_originalZeros, pi_onesRemoved_array), axis=0)
+
+
+
+
+
+
+##################################
+##################################
+#Inserting ROC-script (supposed to be imported):
+from pylab import *
+from scipy.io import loadmat
+from sklearn import cross_validation
+from sklearn.linear_model import LogisticRegression
+#from toolbox_02450 import rocplot, confmatplot
+
+from sklearn import metrics
+
+def rocplot(p, y):
+    '''
+    function: AUC, TPR, FPR = rocplot(p, y)
+    ROCPLOT Plots the receiver operating characteristic (ROC) curve and
+    calculates the area under the curve (AUC).
+
+    Notice that the function assumes values of p are all distinct.
+
+
+    Usage:
+        rocplot(p, y)
+        AUC, TPR, FDR = rocplot(p, y)
+
+     Input:
+         p: Estimated probability of class 1. (Between 0 and 1.)
+         y: True class indices. (Equal to 0 or 1.)
+
+    Output:
+        AUC: The area under the ROC curve
+        TPR: True positive rate
+        FPR: False positive rate
+    '''
+    #ind = np.argsort(p,0)
+    #x = y[ind].A.ravel()
+    #FNR = np.mat(np.cumsum(x==1, 0, dtype=float)).T / np.sum(x==1,0)
+    #TPR = 1 - FNR
+    #TNR = np.mat(np.cumsum(x==0, 0, dtype=float)).T / np.sum(x==0,0)
+    #FPR = 1 - TNR
+    #onemat = np.mat([1])
+    #TPR = np.bmat('onemat; TPR'); FPR = np.mat('onemat; FPR') # Don't get this line.
+    #TPR = vstack( (np.ones(1), TPR))
+    #FPR = vstack( (np.ones(1), FPR))
+
+    #AUC = -np.diff(FPR,axis=0).T * (TPR[0:-1]+TPR[1:])/2
+    #AUC = AUC[0,0]
+
+    #%%
+    fpr, tpr, thresholds = metrics.roc_curve(y.ravel(),p.ravel())
+    #FPR = fpr
+    #TPR = TPR
+    #TPR
+    AUC = metrics.roc_auc_score(y.ravel(), p.ravel())
+    #%%
+    plot(fpr, tpr, 'r', [0, 1], [0, 1], 'k')
+    grid()
+    xlim([-0.01,1.01]); ylim([-0.01,1.01])
+    xticks(arange(0,1.1,.1)); yticks(arange(0,1.1,.1))
+    xlabel('False positive rate (1-Specificity)')
+    ylabel('True positive rate (Sensitivity)')
+    title('Receiver operating characteristic (ROC)\n AUC={:.3f}'.format(AUC))
+
+
+    return AUC, tpr, fpr
+
+rocplot(p, y_test)
+
+
+
+
+
+#Statistics from Adjacency matrixes:
 tf.reduce_max(pi).eval()
 tf.reduce_min(pi).eval()
 
@@ -129,6 +234,11 @@ x_trainTF=tf.convert_to_tensor(x_train, np.float32)
 met=tf.metrics.auc(x_trainTF,pi,num_thresholds=200,curve='ROC')
 met[0].eval()
 
+
+
+#####################
+#####################
+#Not used:
 # In[29]:
 
 #b_samples = b.sample(10)[:, 0].eval()
