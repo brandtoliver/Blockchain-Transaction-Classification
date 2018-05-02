@@ -1,8 +1,3 @@
-
-# coding: utf-8
-
-# In[1]:
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -18,11 +13,24 @@ from edward.models import Normal, Poisson, Bernoulli, InverseGamma
 #from observations import celegans
 import collections
 
+#Reading data into adjecency and 0'ing last 1% links:
+from Feature_extraction.Edgelist import M_onesRemoved, M_fullData, M_zeroing
 
-# In[2]:
+x_train= M_zeroing[:500,:500]
+
+"""
+###################
+###################
+#Reading by old adjecency matrix:
+#Det fulde (samlede datasæt)
+G_full = nx.read_edgelist("/Users/MartinJohnsen/Documents/Martin Johnsen/SAS/6. Semester/Bachelorprojekt/PyCharm/Data/network_10k.edgelist",create_using=nx.DiGraph()) # read and parse edgelist to (networkx) graph
+A_full = nx.adjacency_matrix(G_full) # make Adjacency matrix
+#x_trainn = np.asarray(A.todense()) # convert Adjacency matrix to numpy array
+
+data_full= np.asarray(A_full.todense())
 
 #x_train = celegans("~/data")
-G = nx.read_edgelist("/Users/MartinJohnsen/Documents/Martin Johnsen/SAS/6. Semester/Bachelorprojekt/PyCharm/Data/network_subset.edgelist",create_using=nx.DiGraph()) # read and parse edgelist to (networkx) graph
+G = nx.read_edgelist("/Users/MartinJohnsen/Documents/Martin Johnsen/SAS/6. Semester/Bachelorprojekt/PyCharm/Data/network_excluded.edgelist",create_using=nx.DiGraph()) # read and parse edgelist to (networkx) graph
 A = nx.adjacency_matrix(G) # make Adjacency matrix
 #x_trainn = np.asarray(A.todense()) # convert Adjacency matrix to numpy array
 
@@ -33,18 +41,16 @@ x_train = data[:500,:500]
 
 
 #x_test = data[20:40,20:40]
-
-
-
-# In[13]:
 """
+
+"""
+#Drawing graph (heavy!)
 G=nx.from_numpy_matrix(x_train)
 nx.draw(G, node_size = 5)  # networkx draw()
 plt.draw()
 plt.show()
 """
 
-# In[25]:
 
 N = x_train.shape[0]  # number of data points
 K = 5  # latent dimensionality
@@ -87,12 +93,13 @@ plt.show()
 """
 
 # In[26]:
+#Ed.map er dét Morten har snakket om.
 #Kør enten denne eller [51]:
 inference = ed.MAP([z1,z2,b], data={x: x_train})
 
 
 # In[51]:
-
+#Modellen  med KL-divergens:
 #tf.reset_default_graph()
 qz1 = Normal(loc=tf.get_variable("qz1/loc", [N, K]),
              scale=tf.nn.softplus(tf.get_variable("qz1/scale", [N, K])))
@@ -100,14 +107,27 @@ qz2 = Normal(loc=tf.get_variable("qz2/loc", [N, K]),
              scale=tf.nn.softplus(tf.get_variable("qz2/scale", [N, K])))
 qb = Normal(loc=tf.get_variable("qb/loc", 1),
              scale=tf.nn.softplus(tf.get_variable("qb/scale", 1)))
-
 inference = ed.KLqp({z1: qz1, z2: qz2, b: qb}, data={x: x_train})
 
 
 # In[27]:
-
+#Kør denne inferens efter en af de to modeller:
 inference.run(n_iter=500)
 
+tf.reduce_max(pi).eval()
+tf.reduce_min(pi).eval()
+
+prob=pi.eval()                                  #Defining all probabilities in an array
+probs=prob[x_train>0]                           #Taking all probabilities where links (=1) exists in training data
+np.mean(probs)                                  #Taking mean of the probabilities
+
+np.max(probs)
+np.min(probs)
+
+x_trainTF=tf.convert_to_tensor(x_train, np.float32)
+
+met=tf.metrics.auc(x_trainTF,pi,num_thresholds=200,curve='ROC')
+met[0].eval()
 
 # In[29]:
 
@@ -144,7 +164,7 @@ plt.show()
 
 
 # In[ ]:
-
+#Prediction:
 x_post = ed.copy(x, {z1: qz1, z2: qz2, b: qb})
 
 x_test = tf.cast(x_test, tf.int32)
