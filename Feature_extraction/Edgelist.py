@@ -85,8 +85,20 @@ M_onesRemoved= M_fullData-M_zeroing
 
 #Creating a dataset consisting of only the correct zero's - same amount as correct ones (=1258)
 (M_originalZero==0).sum()
+(M_originalZero==1).sum()
+M_originalZero[M_originalZero>0]=1
 
 M_originalZero
+
+
+a = df.value.values  # get a view into value col
+idx = np.where(M_originalZero==0)# get the nonzero indices
+
+# Finally select unique 10% from those indices and set 0s there
+a[np.random.choice(idx,size=int(0.1*len(idx)),replace=0)] = 0
+
+
+
 
 v = M_originalZero == 0
 M_originalZero.iloc[v, 'value'] = np.random.choice((1, 0), v.sum(), p=(.9, .1))
