@@ -163,7 +163,7 @@ time: 6809s
 
 K=1000:
 liks: 
-time: 100427s 
+time: 33708s 
 """
 
 #Posterior predictive distribution:
