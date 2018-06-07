@@ -13,7 +13,7 @@ from edward.models import Normal, Poisson, InverseGamma
 #from observations import celegans
 import collections
 
-X = pd.read_csv("/Users/MartinJohnsen/Documents/Martin Johnsen/SAS/6. Semester/Bachelorprojekt/PyCharm/Data/network_10k.csv") # 2.14 GB
+X = pd.read_csv("/user_network.csv") #
 X.columns = ['id','unix_time', 'dst_id',"src_id"]
 
 X.iloc[:, 2:4].to_csv("/Users/MartinJohnsen/Documents/Martin Johnsen/SAS/6. Semester/Bachelorprojekt/PyCharm/Data/network_10k.edgelist",sep = " " ,index = False)
