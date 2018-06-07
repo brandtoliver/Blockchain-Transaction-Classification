@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-netw= pd.read_csv('/Users/MartinJohnsen/Documents/Martin Johnsen/SAS/6. Semester/Bachelorprojekt/PyCharm/Data/network_10k_w_unix.csv', sep=",", header=0)
+netw= pd.read_csv('/user_network', sep=",", header=0)
 
 """
 #Finding x% last made links:
