@@ -2,9 +2,9 @@
 
 Two-sided Bitcoin Classification project:
 
-* Gaussian Mixture Models on Bitcoin Blockchain (record) transaction data.
+* Gaussian Mixture Models on Bitcoin Blockchain user record transaction data. Data can be downloaded from: https://drive.google.com/file/d/1CNsVfor7k1NqpMb1Abq_aGxI9RzVhcp5/view?usp=sharing 
 
-* Latent Space Models and Stochastic Block Models on Bitcoin Blockchain network data.
+* Latent Space Models and Stochastic Block Models on Bitcoin Blockchain network data. Data can be downloaded from: https://drive.google.com/file/d/1k0_gx5ehk4ZXxLQAiKF1o2TMmJoq_Q4v/view?usp=sharing 
 
 ## Project abstract
 The anonymity properties of the bitcoin blockchain have recently a popular topic of discussion, especially in relation to money laundering. Given these properties, a question can be posed about whether it is possible to extract meaningful in- sights from raw transaction data. Using Bayesian machine learning techniques, a framework is proposed in order to analyse the flow of Bitcoins, cluster the users of Bitcoin, and detect abnormal behaviour of these users.
