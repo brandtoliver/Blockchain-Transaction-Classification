@@ -26,3 +26,6 @@ Given this framework, it was possible to extract meaningful information from a s
 * Martin Johnsen ([mar10nJohns1](https://github.com/mar10nJohns1))
 * Andreas Jensen ([MotzWanted](https://github.com/MotzWanted))
 * Oliver Brandt ([brandtoliver](https://github.com/brandtoliver))
+
+## Full proejct report
+[Full project report](Project_report.pdf)
