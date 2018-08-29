@@ -27,5 +27,5 @@ Given this framework, it was possible to extract meaningful information from a s
 * Andreas Jensen ([MotzWanted](https://github.com/MotzWanted))
 * Oliver Brandt ([brandtoliver](https://github.com/brandtoliver))
 
-## Full proejct report
+## Full project report
 [Identifying blockchain transactions using unsupervised machine learning](Project_report.pdf)
